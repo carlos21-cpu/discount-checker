@@ -753,9 +753,15 @@ function SearchCard({ onNext }: { onNext: () => void }) {
 function ConfirmCard({
   onCard,
   onSpei,
+  original,
+  total,
+  savings,
 }: {
   onCard: () => void;
   onSpei: () => void;
+  original: number;
+  total: number;
+  savings: number;
 }) {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-6">
@@ -790,10 +796,10 @@ function ConfirmCard({
           25% en su pago.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-muted-foreground line-through">{fmt(ORIGINAL)}</span>
-          <span className="text-3xl font-bold text-[var(--burgundy)]">{fmt(TOTAL)}</span>
+          <span className="text-muted-foreground line-through">{fmt(original)}</span>
+          <span className="text-3xl font-bold text-[var(--burgundy)]">{fmt(total)}</span>
           <span className="bg-[var(--burgundy)] text-white text-xs font-semibold rounded-full px-3 py-1">
-            Ahorro {fmt(SAVINGS)}
+            Ahorro {fmt(savings)}
           </span>
         </div>
         <div className="mt-3 flex items-center gap-2 text-xs text-amber-700">
@@ -807,7 +813,7 @@ function ConfirmCard({
           Total del Adeudo (con 25% descuento)
         </div>
         <div className="text-4xl font-bold text-[var(--burgundy)] mt-1">
-          {fmt(TOTAL)}
+          {fmt(total)}
         </div>
       </div>
 
@@ -841,9 +847,9 @@ function DataField({ label, value }: { label: string; value: string }) {
 }
 
 /* -------- Payment screens -------- */
-function CardPayment({ onBack }: { onBack: () => void }) {
+function CardPayment({ onBack, total }: { onBack: () => void; total: number }) {
   const [done, setDone] = useState(false);
-  if (done) return <PaymentSuccess method="Tarjeta" />;
+  if (done) return <PaymentSuccess method="Tarjeta" total={total} />;
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-5">
       <button
@@ -858,7 +864,7 @@ function CardPayment({ onBack }: { onBack: () => void }) {
       </div>
       <div className="bg-[var(--burgundy-soft)] border border-[var(--burgundy)]/20 rounded-md p-4 text-sm flex items-center justify-between">
         <span>Total a pagar</span>
-        <span className="text-2xl font-bold text-[var(--burgundy)]">{fmt(TOTAL)}</span>
+        <span className="text-2xl font-bold text-[var(--burgundy)]">{fmt(total)}</span>
       </div>
       <form
         onSubmit={(e) => {
@@ -877,14 +883,22 @@ function CardPayment({ onBack }: { onBack: () => void }) {
           type="submit"
           className="w-full bg-[var(--burgundy)] hover:bg-[var(--burgundy-dark)] text-white font-semibold py-3 rounded-md"
         >
-          Pagar {fmt(TOTAL)}
+          Pagar {fmt(total)}
         </button>
       </form>
     </div>
   );
 }
 
-function SpeiPayment({ onBack }: { onBack: () => void }) {
+function SpeiPayment({
+  onBack,
+  total,
+  clabe,
+}: {
+  onBack: () => void;
+  total: number;
+  clabe: { banco: string; clabe: string };
+}) {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-5">
       <button
@@ -899,12 +913,12 @@ function SpeiPayment({ onBack }: { onBack: () => void }) {
       </div>
       <div className="bg-[var(--burgundy-soft)] border border-[var(--burgundy)]/20 rounded-md p-4 text-sm flex items-center justify-between">
         <span>Monto exacto a transferir</span>
-        <span className="text-2xl font-bold text-[var(--burgundy)]">{fmt(TOTAL)}</span>
+        <span className="text-2xl font-bold text-[var(--burgundy)]">{fmt(total)}</span>
       </div>
       <div className="space-y-3 text-sm">
         <Row label="Beneficiario" value="Secretaria de Finanzas" />
-        <Row label="Banco" value="BBVA Mexico" />
-        <Row label="CLABE Interbancaria" value="012 180 01234567890 1" />
+        <Row label="Banco" value={clabe.banco} />
+        <Row label="CLABE Interbancaria" value={clabe.clabe} />
         <Row label="Concepto" value="ABC1234L4N" />
         <Row label="Referencia" value="2026051200001" />
       </div>
@@ -936,7 +950,7 @@ function Field({ label, placeholder }: { label: string; placeholder: string }) {
   );
 }
 
-function PaymentSuccess({ method }: { method: string }) {
+function PaymentSuccess({ method, total }: { method: string; total: number }) {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-8 text-center">
       <div className="mx-auto h-16 w-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
@@ -944,7 +958,7 @@ function PaymentSuccess({ method }: { method: string }) {
       </div>
       <h2 className="text-2xl font-bold">Pago Exitoso</h2>
       <p className="text-muted-foreground mt-2">
-        Su pago de {fmt(TOTAL)} con {method} ha sido procesado correctamente.
+        Su pago de {fmt(total)} con {method} ha sido procesado correctamente.
       </p>
       <p className="text-sm text-muted-foreground mt-4">
         Folio: <span className="font-mono font-semibold">ABC1234L4N</span>
