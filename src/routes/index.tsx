@@ -116,7 +116,7 @@ function TopBar() {
   return (
     <div className="bg-[var(--burgundy-dark)] text-white text-xs">
       <div className="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2">
-        <span className="opacity-90">Gobierno del Estado de Mexico</span>
+        <span className="opacity-90">Derechos de Control Vehicular</span>
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1">
             <Phone className="h-3 w-3" /> 800-CONTROL
