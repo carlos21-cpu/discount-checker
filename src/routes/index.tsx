@@ -737,7 +737,7 @@ function Stepper({ step }: { step: number }) {
   );
 }
 
-function SearchCard({ onNext }: { onNext: () => void }) {
+function SearchCard({ onNext, estado }: { onNext: () => void; estado: string }) {
   const [code] = useState(() =>
     Array.from({ length: 5 }, () =>
       "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".charAt(Math.floor(Math.random() * 32))
@@ -757,7 +757,7 @@ function SearchCard({ onNext }: { onNext: () => void }) {
             ABC1234
           </div>
           <p className="text-xs text-[var(--burgundy)] mt-1">
-            Placa registrada en Estado de Mexico
+            Placa registrada en {estado || "Estado de Mexico"}
           </p>
         </div>
         <div>
@@ -792,12 +792,14 @@ function ConfirmCard({
   original,
   total,
   savings,
+  estado,
 }: {
   onCard: () => void;
   onSpei: () => void;
   original: number;
   total: number;
   savings: number;
+  estado: string;
 }) {
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-6">
@@ -816,6 +818,9 @@ function ConfirmCard({
         </div>
         <div className="mt-3">
           <DataField label="FECHA DE REGISTRO" value="11/05/2026, 09:54:19 a.m." />
+        </div>
+        <div className="mt-3">
+          <DataField label="ENTIDAD DE REGISTRO" value={estado || "Estado de Mexico"} />
         </div>
       </div>
 
