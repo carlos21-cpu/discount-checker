@@ -647,6 +647,7 @@ function FlowPage({
   total,
   savings,
   clabe,
+  estado,
 }: {
   screen: Screen;
   setScreen: (s: Screen) => void;
@@ -654,6 +655,7 @@ function FlowPage({
   total: number;
   savings: number;
   clabe: { banco: string; clabe: string };
+  estado: string;
 }) {
   const stepNum =
     screen === "search" ? 1 : screen === "confirm" ? 2 : 3;
@@ -670,7 +672,9 @@ function FlowPage({
         </div>
         <Stepper step={stepNum} />
         <div className="mt-6">
-          {screen === "search" && <SearchCard onNext={() => setScreen("confirm")} />}
+          {screen === "search" && (
+            <SearchCard onNext={() => setScreen("confirm")} estado={estado} />
+          )}
           {screen === "confirm" && (
             <ConfirmCard
               onCard={() => setScreen("card")}
@@ -678,6 +682,7 @@ function FlowPage({
               original={original}
               total={total}
               savings={savings}
+              estado={estado}
             />
           )}
           {screen === "card" && (
